@@ -1,24 +1,25 @@
 package taskmanager.core.models;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
-public class Task {
+public class SerializableTask implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private int id;
     private String title;
-    private Optional<String> description;
-    private Optional<LocalDateTime> dueDate;
+    private String description;
+    private LocalDateTime dueDate;
     private TaskPriority priority;
     private TaskStatus status;
-    private Optional<String> category;
-
-    public Task(int id) {
-        this.id = id;
-    }
+    private String category;
 
     public int getId() {
         return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getTitle() {
@@ -29,25 +30,20 @@ public class Task {
         this.title = title;
     }
 
-    public Optional<String> getDescription() {
+    public String getDescription() {
         return description;
     }
 
     public void setDescription(String description) {
-        if (description == null || description.isBlank()) {
-            this.description = Optional.empty();
-            return;
-        }
-
-        this.description = Optional.ofNullable(description);
+        this.description = description;
     }
 
-    public Optional<LocalDateTime> getDueDate() {
+    public LocalDateTime getDueDate() {
         return dueDate;
     }
 
     public void setDueDate(LocalDateTime dueDate) {
-        this.dueDate = Optional.ofNullable(dueDate);
+        this.dueDate = dueDate;
     }
 
     public TaskPriority getPriority() {
@@ -66,18 +62,11 @@ public class Task {
         this.status = status;
     }
 
-    public Optional<String> getCategory() {
+    public String getCategory() {
         return category;
     }
 
     public void setCategory(String category) {
-        if (category == null || category.isBlank()) {
-            this.category = Optional.empty();
-            return;
-        }
-
-        this.category = Optional.ofNullable(category);
+        this.category = category;
     }
-
-    
 }
