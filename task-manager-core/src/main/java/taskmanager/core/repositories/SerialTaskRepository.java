@@ -9,6 +9,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -20,6 +22,7 @@ import taskmanager.core.exceptions.repository.AlreadyInRepositoryException;
 import taskmanager.core.exceptions.repository.LoadObjectFailedException;
 import taskmanager.core.exceptions.repository.ObjectRepositoryException;
 import taskmanager.core.interfaces.TaskRepositoryInterface;
+import taskmanager.core.io.AppendableObjectOutputStream;
 import taskmanager.core.models.SerializableTask;
 
 public class SerialTaskRepository implements TaskRepositoryInterface, AutoCloseable {
@@ -29,6 +32,7 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
     private final String saveFile;
     private final String idCache;
 
+    private static final Object syncObject = new Object();
     private static Set<Integer> idSet = null;
 
     public SerialTaskRepository(String fileName, String idCacheName) {
@@ -53,8 +57,15 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
         }
 
         // Add if not in repo
-        try (ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(saveFile, true)))) {
+        File file = new File(saveFile);
+        boolean append = file.exists() && file.length() > 0;
+
+        try (ObjectOutputStream oos = (append ?
+            new AppendableObjectOutputStream(new BufferedOutputStream(new FileOutputStream(saveFile, true))) :
+            new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(saveFile, true))))) {
+
             oos.writeObject(task);
+            
         } catch (IOException e) {
             throw new ObjectRepositoryException(
                     String.format("Adding task (id: %d) to repository failed.", task.getId()));
@@ -111,38 +122,41 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
         saveIds();
     }
     
-    public synchronized void loadIds() throws ObjectRepositoryException {
-        if (idSet != null) {
-            return;
-        } 
-
-        File file = new File(idCache);
-
-        try {
-            if (file.createNewFile()) {
-                // File did not exist yet
-                idSet = new HashSet<>();
-                saveIds();
+    public void loadIds() throws ObjectRepositoryException {
+        synchronized (syncObject) {
+            if (idSet != null) {
                 return;
             } 
-
-        } catch (IOException e) {
-            throw new ObjectRepositoryException("Caching task ids failed");
-        }
-
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(idCache))) {
-            idSet = (Set<Integer>) ois.readObject();
-        } catch ( IOException | ClassNotFoundException e) {
-            throw new ObjectRepositoryException("Caching task ids failed");
+    
+            File file = new File(idCache);
+    
+            try {
+                if (file.createNewFile()) {
+                    // File did not exist yet
+                    idSet = new HashSet<>();
+                    saveIds();
+                    return;
+                } 
+    
+            } catch (IOException e) {
+                throw new ObjectRepositoryException("Caching task ids failed");
+            }
+    
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(idCache))) {
+                idSet = (Set<Integer>) ois.readObject();
+            } catch ( IOException | ClassNotFoundException e) {
+                throw new ObjectRepositoryException("Caching task ids failed");
+            }
         }
     }
 
-    private synchronized void saveIds() throws ObjectRepositoryException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(idCache))) {
-            oos.writeObject(idSet);
-        } catch (IOException | NoSuchElementException e) {
-            throw new ObjectRepositoryException("Cahcing task ids failed");
+    private void saveIds() throws ObjectRepositoryException {
+        synchronized (syncObject) {
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(idCache))) {
+                oos.writeObject(idSet);
+            } catch (IOException | NoSuchElementException e) {
+                throw new ObjectRepositoryException("Cahcing task ids failed");
+            }
         }
     }
-
 }
