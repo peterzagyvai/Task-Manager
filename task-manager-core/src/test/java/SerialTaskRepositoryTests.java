@@ -1,6 +1,7 @@
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertLinesMatch;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,6 +11,7 @@ import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.lang.foreign.Linker.Option;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -394,6 +396,14 @@ class SerialTaskRepositoryTests {
             () -> assertEquals(TaskPriority.MODERATE, taskCopy.getPriority()),
             () -> assertEquals(TaskStatus.NOT_STARTED, taskCopy.getStatus())
         );
+    }
+
+    @Test
+    void testGetByIdNoMatchingId() throws AlreadyInRepositoryException, ObjectRepositoryException {
+        repository.add(task);
+        Optional<SerializableTask> opt = repository.get(1000);
+        
+        assertFalse(opt.isPresent());
     }
 
 }
