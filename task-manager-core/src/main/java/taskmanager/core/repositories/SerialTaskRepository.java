@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -11,6 +12,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -18,6 +20,7 @@ import java.util.function.Predicate;
 
 import taskmanager.core.exceptions.repository.AddingToRepositoryFailedException;
 import taskmanager.core.exceptions.repository.AlreadyInRepositoryException;
+import taskmanager.core.exceptions.repository.ObjectNotInRepository;
 import taskmanager.core.exceptions.repository.ObjectRepositoryException;
 import taskmanager.core.exceptions.repository.ReadingFromRepositoryFailedException;
 import taskmanager.core.interfaces.TaskRepositoryInterface;
@@ -59,50 +62,88 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
         File file = new File(saveFile);
         boolean append = file.exists() && file.length() > 0;
 
-        try (ObjectOutputStream oos = (append ?
-            new AppendableObjectOutputStream(new BufferedOutputStream(new FileOutputStream(saveFile, true))) :
-            new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(saveFile, true))))) {
-
-            oos.writeObject(task);
-            idSet.add(task.getId());
-            cacheIds();
-        } catch (IOException e) {
-            throw new AddingToRepositoryFailedException(
-                    String.format("Adding task (id: %d) to repository failed.", task.getId())
-            );
+        synchronized (syncObject) {
+            try (ObjectOutputStream oos = (append ?
+                new AppendableObjectOutputStream(new BufferedOutputStream(new FileOutputStream(saveFile, true))) :
+                new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(saveFile, true))))) {
+    
+                oos.writeObject(task);
+                idSet.add(task.getId());
+                cacheIds();
+            } catch (IOException e) {
+                throw new AddingToRepositoryFailedException(
+                        String.format("Adding task (id: %d) to repository failed.", task.getId())
+                );
+            }
         }
     }
 
 
     @Override
     public void update(int id, SerializableTask task) throws ObjectRepositoryException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'update'");
+        if (!idSet.contains(id)) {
+            throw new ObjectNotInRepository(String.format("Task id: %d is invalid", id));
+        }
+
+        List<SerializableTask> allTasks = getAll();
+
+        for (SerializableTask t : allTasks) {
+            if (t.getId() == id) {
+
+                t.setTitle(task.getTitle());
+                t.setDescription(task.getDescription());
+                t.setCategory(task.getCategory());
+                t.setPriority(task.getPriority());
+                t.setStatus(task.getStatus());
+                t.setDueDate(task.getDueDate());
+                
+                break;
+            }
+        }
+
+        overwrite(allTasks);
     }
 
     @Override
     public void delete(int id) throws ObjectRepositoryException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+        if (!idSet.contains(id)) {
+            throw new ObjectNotInRepository(String.format("Task id: %d is invalid", id));
+        }
+
+        List<SerializableTask> allTasks = getAll();
+
+        ListIterator<SerializableTask> iter = allTasks.listIterator();
+        while (iter.hasNext()) {
+            SerializableTask task;
+            if ((task = iter.next()).getId() == id) {
+                idSet.remove(task.getId());
+                iter.remove();
+
+                break;
+            }
+        }
+
+        overwrite(allTasks);
     }
 
     @Override
     public List<SerializableTask> get(Predicate<SerializableTask> predicate) throws ObjectRepositoryException {
         List<SerializableTask> tasks = new ArrayList<>();
 
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveFile))) {
-            while (true) {
-                Object object = ois.readObject();
-                if (object instanceof SerializableTask task && predicate.test(task)) {
-                    tasks.add(task);
+        synchronized (syncObject) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveFile))) {
+                while (true) {
+                    Object object = ois.readObject();
+                    if (object instanceof SerializableTask task && predicate.test(task)) {
+                        tasks.add(task);
+                    }
                 }
+            } catch (EOFException e) {
+                // Exit while loop
+            } catch (IOException | ClassNotFoundException e) {
+                throw new ReadingFromRepositoryFailedException("Reading tasks failed");
             }
-        } catch (EOFException e) {
-            // Exit while loop
-        } catch (IOException | ClassNotFoundException e) {
-            throw new ReadingFromRepositoryFailedException("Reading tasks failed");
         }
-
 
         return tasks;
     }
@@ -111,17 +152,19 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
     public List<SerializableTask> getAll() throws ObjectRepositoryException {
         List<SerializableTask> allTasks = new ArrayList<>();
 
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveFile))) {
-            while (true) {
-                Object object = ois.readObject();
-                if (object instanceof SerializableTask task) {
-                    allTasks.add(task);
+        synchronized (syncObject) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveFile))) {
+                while (true) {
+                    Object object = ois.readObject();
+                    if (object instanceof SerializableTask task) {
+                        allTasks.add(task);
+                    }
                 }
+            } catch (EOFException e) {
+                // Exit while loop
+            } catch (IOException | ClassNotFoundException e) {
+                throw new ReadingFromRepositoryFailedException("Reading tasks failed");
             }
-        } catch (EOFException e) {
-            // Exit while loop
-        } catch (IOException | ClassNotFoundException e) {
-            throw new ReadingFromRepositoryFailedException("Reading tasks failed");
         }
 
         return allTasks;
@@ -133,17 +176,19 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
             loadIdCache();
         }
 
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveFile))) {
-            while (true) {
-                Object object = ois.readObject();
-                if (object instanceof SerializableTask task && task.getId() == id) {
-                    return Optional.of(task);
+        synchronized (syncObject) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveFile))) {
+                while (true) {
+                    Object object = ois.readObject();
+                    if (object instanceof SerializableTask task && task.getId() == id) {
+                        return Optional.of(task);
+                    }
                 }
+            } catch (EOFException e) {
+                return Optional.empty();
+            } catch (IOException | ClassNotFoundException e) {
+                throw new ReadingFromRepositoryFailedException(String.format("Loading task (id: %d) failed", id));
             }
-        } catch (EOFException e) {
-            return Optional.empty();
-        } catch (IOException | ClassNotFoundException e) {
-            throw new ReadingFromRepositoryFailedException(String.format("Loading task (id: %d) failed", id));
         }
     }
 
@@ -182,6 +227,20 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
                 oos.writeObject(idSet);
             } catch (IOException | NoSuchElementException e) {
                 throw new ObjectRepositoryException("Cahcing task ids failed");
+            }
+        }
+    }
+
+    private void overwrite(List<SerializableTask> list) throws ObjectRepositoryException {
+        synchronized (syncObject) {
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(saveFile))) {
+                idSet = new HashSet<>();
+                for (SerializableTask task : list) {
+                    oos.writeObject(task);
+                    idSet.add(task.getId());
+                }
+            } catch (IOException e) {
+                throw new ObjectRepositoryException("Overwriting data failed");
             }
         }
     }

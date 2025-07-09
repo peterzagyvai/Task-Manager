@@ -2,7 +2,7 @@
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertLinesMatch;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,7 +11,6 @@ import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.lang.foreign.Linker.Option;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -26,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import taskmanager.core.exceptions.repository.AlreadyInRepositoryException;
+import taskmanager.core.exceptions.repository.ObjectNotInRepository;
 import taskmanager.core.exceptions.repository.ObjectRepositoryException;
 import taskmanager.core.models.SerializableTask;
 import taskmanager.core.models.TaskPriority;
@@ -35,6 +35,11 @@ import taskmanager.core.repositories.SerialTaskRepository;
 class SerialTaskRepositoryTests {
     
     SerializableTask task;
+    SerializableTask task1;
+    SerializableTask task2;
+    SerializableTask task3;
+    SerializableTask task4;
+    SerializableTask task5;
     SerialTaskRepository repository;
     
     Path saveFile = Path.of("src/test/resources/task.dat");
@@ -61,6 +66,51 @@ class SerialTaskRepositoryTests {
         task.setPriority(TaskPriority.MODERATE);
         task.setStatus(TaskStatus.NOT_STARTED);
         task.setCategory("Test Category");
+
+        task1 = new SerializableTask();
+        task1.setId(1);
+        task1.setTitle("Test Task 1");
+        task1.setDescription("Test Description 1");
+        task1.setCategory("Test Category 1");
+        task1.setPriority(TaskPriority.NEGLIGIBLE);
+        task1.setStatus(TaskStatus.NOT_STARTED);
+        task1.setDueDate(LocalDateTime.of(2025, 01, 01, 0, 0, 0));
+
+        task2 = new SerializableTask();
+        task2.setId(2);
+        task2.setTitle("Test Task 2");
+        task2.setDescription("Test Description 2");
+        task2.setCategory("Test Category 2");
+        task2.setPriority(TaskPriority.LOW);
+        task2.setStatus(TaskStatus.STARTED);
+        task2.setDueDate(LocalDateTime.of(2025, 01, 02, 0, 0, 0));
+
+        task3 = new SerializableTask();
+        task3.setId(3);
+        task3.setTitle("Test Task 3");
+        task3.setDescription("Test Description 3");
+        task3.setCategory("Test Category 3");
+        task3.setPriority(TaskPriority.MODERATE);
+        task3.setStatus(TaskStatus.COMPLETED);
+        task3.setDueDate(LocalDateTime.of(2025, 01, 03, 0, 0, 0));
+
+        task4 = new SerializableTask();
+        task4.setId(4);
+        task4.setTitle("Test Task 4");
+        task4.setDescription("Test Description 4");
+        task4.setCategory("Test Category 4");
+        task4.setPriority(TaskPriority.HIGH);
+        task4.setStatus(TaskStatus.NOT_COMPLETED);
+        task4.setDueDate(LocalDateTime.of(2025, 01, 04, 0, 0, 0));
+
+        task5 = new SerializableTask();
+        task5.setId(5);
+        task5.setTitle("Test Task 5");
+        task5.setDescription("Test Description 5");
+        task5.setCategory("Test Category 5");
+        task5.setPriority(TaskPriority.CRITICAL);
+        task5.setStatus(TaskStatus.NOT_STARTED);
+        task5.setDueDate(LocalDateTime.of(2025, 01, 05, 0, 0, 0));
     }
 
     @Test
@@ -159,50 +209,7 @@ class SerialTaskRepositoryTests {
 
     @Test
     void getAllTasks() throws ObjectRepositoryException {
-        SerializableTask task1 = new SerializableTask();
-        task1.setId(1);
-        task1.setTitle("Test Task 1");
-        task1.setDescription("Test Description 1");
-        task1.setCategory("Test Category 1");
-        task1.setPriority(TaskPriority.NEGLIGIBLE);
-        task1.setStatus(TaskStatus.NOT_STARTED);
-        task1.setDueDate(LocalDateTime.of(2025, 01, 01, 0, 0, 0));
-
-        SerializableTask task2 = new SerializableTask();
-        task2.setId(2);
-        task2.setTitle("Test Task 2");
-        task2.setDescription("Test Description 2");
-        task2.setCategory("Test Category 2");
-        task2.setPriority(TaskPriority.LOW);
-        task2.setStatus(TaskStatus.STARTED);
-        task2.setDueDate(LocalDateTime.of(2025, 01, 02, 0, 0, 0));
-
-        SerializableTask task3 = new SerializableTask();
-        task3.setId(3);
-        task3.setTitle("Test Task 3");
-        task3.setDescription("Test Description 3");
-        task3.setCategory("Test Category 3");
-        task3.setPriority(TaskPriority.MODERATE);
-        task3.setStatus(TaskStatus.COMPLETED);
-        task3.setDueDate(LocalDateTime.of(2025, 01, 03, 0, 0, 0));
-
-        SerializableTask task4 = new SerializableTask();
-        task4.setId(4);
-        task4.setTitle("Test Task 4");
-        task4.setDescription("Test Description 4");
-        task4.setCategory("Test Category 4");
-        task4.setPriority(TaskPriority.HIGH);
-        task4.setStatus(TaskStatus.NOT_COMPLETED);
-        task4.setDueDate(LocalDateTime.of(2025, 01, 04, 0, 0, 0));
-
-        SerializableTask task5 = new SerializableTask();
-        task5.setId(5);
-        task5.setTitle("Test Task 5");
-        task5.setDescription("Test Description 5");
-        task5.setCategory("Test Category 5");
-        task5.setPriority(TaskPriority.CRITICAL);
-        task5.setStatus(TaskStatus.NOT_STARTED);
-        task5.setDueDate(LocalDateTime.of(2025, 01, 05, 0, 0, 0));
+        
 
         repository.add(task1);
         repository.add(task2);
@@ -262,51 +269,6 @@ class SerialTaskRepositoryTests {
 
     @Test
     void testGetTasksPredicate() throws ObjectRepositoryException {
-        SerializableTask task1 = new SerializableTask();
-        task1.setId(1);
-        task1.setTitle("Test Task 1");
-        task1.setDescription("Test Description 1");
-        task1.setCategory("Test Category 1");
-        task1.setPriority(TaskPriority.NEGLIGIBLE);
-        task1.setStatus(TaskStatus.NOT_STARTED);
-        task1.setDueDate(LocalDateTime.of(2025, 01, 01, 0, 0, 0));
-
-        SerializableTask task2 = new SerializableTask();
-        task2.setId(2);
-        task2.setTitle("Test Task 2");
-        task2.setDescription("Test Description 2");
-        task2.setCategory("Test Category 2");
-        task2.setPriority(TaskPriority.LOW);
-        task2.setStatus(TaskStatus.STARTED);
-        task2.setDueDate(LocalDateTime.of(2025, 01, 02, 0, 0, 0));
-
-        SerializableTask task3 = new SerializableTask();
-        task3.setId(3);
-        task3.setTitle("Test Task 3");
-        task3.setDescription("Test Description 3");
-        task3.setCategory("Test Category 3");
-        task3.setPriority(TaskPriority.MODERATE);
-        task3.setStatus(TaskStatus.COMPLETED);
-        task3.setDueDate(LocalDateTime.of(2025, 01, 03, 0, 0, 0));
-
-        SerializableTask task4 = new SerializableTask();
-        task4.setId(4);
-        task4.setTitle("Test Task 4");
-        task4.setDescription("Test Description 4");
-        task4.setCategory("Test Category 4");
-        task4.setPriority(TaskPriority.HIGH);
-        task4.setStatus(TaskStatus.NOT_COMPLETED);
-        task4.setDueDate(LocalDateTime.of(2025, 01, 04, 0, 0, 0));
-
-        SerializableTask task5 = new SerializableTask();
-        task5.setId(5);
-        task5.setTitle("Test Task 5");
-        task5.setDescription("Test Description 5");
-        task5.setCategory("Test Category 5");
-        task5.setPriority(TaskPriority.CRITICAL);
-        task5.setStatus(TaskStatus.NOT_STARTED);
-        task5.setDueDate(LocalDateTime.of(2025, 01, 05, 0, 0, 0));
-
         repository.add(task1);
         repository.add(task2);
         repository.add(task3);
@@ -323,51 +285,6 @@ class SerialTaskRepositoryTests {
 
     @Test
     void testGetTaskPredicativeNoMatch() throws AlreadyInRepositoryException, ObjectRepositoryException {
-        SerializableTask task1 = new SerializableTask();
-        task1.setId(1);
-        task1.setTitle("Test Task 1");
-        task1.setDescription("Test Description 1");
-        task1.setCategory("Test Category 1");
-        task1.setPriority(TaskPriority.NEGLIGIBLE);
-        task1.setStatus(TaskStatus.NOT_STARTED);
-        task1.setDueDate(LocalDateTime.of(2025, 01, 01, 0, 0, 0));
-
-        SerializableTask task2 = new SerializableTask();
-        task2.setId(2);
-        task2.setTitle("Test Task 2");
-        task2.setDescription("Test Description 2");
-        task2.setCategory("Test Category 2");
-        task2.setPriority(TaskPriority.LOW);
-        task2.setStatus(TaskStatus.STARTED);
-        task2.setDueDate(LocalDateTime.of(2025, 01, 02, 0, 0, 0));
-
-        SerializableTask task3 = new SerializableTask();
-        task3.setId(3);
-        task3.setTitle("Test Task 3");
-        task3.setDescription("Test Description 3");
-        task3.setCategory("Test Category 3");
-        task3.setPriority(TaskPriority.MODERATE);
-        task3.setStatus(TaskStatus.COMPLETED);
-        task3.setDueDate(LocalDateTime.of(2025, 01, 03, 0, 0, 0));
-
-        SerializableTask task4 = new SerializableTask();
-        task4.setId(4);
-        task4.setTitle("Test Task 4");
-        task4.setDescription("Test Description 4");
-        task4.setCategory("Test Category 4");
-        task4.setPriority(TaskPriority.HIGH);
-        task4.setStatus(TaskStatus.NOT_COMPLETED);
-        task4.setDueDate(LocalDateTime.of(2025, 01, 04, 0, 0, 0));
-
-        SerializableTask task5 = new SerializableTask();
-        task5.setId(5);
-        task5.setTitle("Test Task 5");
-        task5.setDescription("Test Description 5");
-        task5.setCategory("Test Category 5");
-        task5.setPriority(TaskPriority.CRITICAL);
-        task5.setStatus(TaskStatus.NOT_STARTED);
-        task5.setDueDate(LocalDateTime.of(2025, 01, 05, 0, 0, 0));
-
         repository.add(task1);
         repository.add(task2);
         repository.add(task3);
@@ -406,4 +323,91 @@ class SerialTaskRepositoryTests {
         assertFalse(opt.isPresent());
     }
 
+    @Test
+    void testUpdateTask() throws AlreadyInRepositoryException, ObjectRepositoryException {
+        repository.add(task1);
+        repository.add(task2);
+        repository.add(task3);
+        repository.add(task4);
+        repository.add(task5);
+
+        SerializableTask update = new SerializableTask();
+        update.setId(-1);
+        update.setTitle("Updated Title");
+        update.setDescription("Updated Description");
+        update.setCategory("Updated Category");
+        update.setPriority(TaskPriority.CRITICAL);
+        update.setStatus(TaskStatus.STARTED);
+        update.setDueDate(LocalDateTime.of(2026,01,01,00,00,00));
+
+
+        repository.update(1, update);
+
+        Optional<SerializableTask> opt = repository.get(1);
+        opt.ifPresent(taskOpt -> {
+            assertAll(
+                () -> assertEquals(1, taskOpt.getId()),
+                () -> assertEquals("Updated Title", taskOpt.getTitle()),
+                () -> assertEquals("Updated Description", taskOpt.getDescription()),
+                () -> assertEquals("Updated Category", taskOpt.getCategory()),
+                () -> assertEquals(TaskPriority.CRITICAL, taskOpt.getPriority()),
+                () -> assertEquals(TaskStatus.STARTED, taskOpt.getStatus()),
+                () -> assertEquals(LocalDateTime.of(2026,01,01,00,00,00), taskOpt.getDueDate())
+            );
+        });
+    }
+
+    @Test 
+    void testUpdateTaskInvalidId() throws AlreadyInRepositoryException, ObjectRepositoryException {
+        repository.add(task1);
+        repository.add(task2);
+        repository.add(task3);
+        repository.add(task4);
+        repository.add(task5);
+
+        SerializableTask update = new SerializableTask();
+        update.setId(-1);
+        update.setTitle("Updated Title");
+        update.setDescription("Updated Description");
+        update.setCategory("Updated Category");
+        update.setPriority(TaskPriority.CRITICAL);
+        update.setStatus(TaskStatus.STARTED);
+        update.setDueDate(LocalDateTime.of(2026,01,01,00,00,00));
+
+        assertThrows(ObjectNotInRepository.class, () -> {
+            repository.update(1000, update);
+        });
+    }
+
+    @Test
+    void testDeleteTask() throws AlreadyInRepositoryException, ObjectRepositoryException {
+        repository.add(task1);
+        repository.add(task2);
+        repository.add(task3);
+        repository.add(task4);
+        repository.add(task5);
+
+        repository.delete(1);
+        
+        List<SerializableTask> allTasks = repository.getAll();
+        
+        assertEquals(4, allTasks.size());
+
+        for (SerializableTask currentTask : allTasks) {
+            assertNotEquals(1, currentTask.getId());
+        }
+    }
+    
+    @Test
+    void deleteTaskInvalidId() throws AlreadyInRepositoryException, ObjectRepositoryException {
+        repository.add(task1);
+        repository.add(task2);
+        repository.add(task3);
+        repository.add(task4);
+        repository.add(task5);
+
+        assertThrows(ObjectNotInRepository.class, () -> {
+            repository.delete(1000);
+        });
+    }
 }
