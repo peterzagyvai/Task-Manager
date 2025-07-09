@@ -33,21 +33,24 @@ public class Task {
         return description;
     }
 
-    public void setDescription(String description) {
-        if (description == null || description.isBlank()) {
-            this.description = Optional.empty();
-            return;
-        }
+    public void setDescription(Optional<String> description) {
+        description.ifPresent(descString -> {
+            if (descString.isBlank()) {
+                this.description = Optional.empty();
+            }
+        });
 
-        this.description = Optional.ofNullable(description);
+        if (description.isPresent()) {
+            this.description = description;
+        }
     }
 
     public Optional<LocalDateTime> getDueDate() {
         return dueDate;
     }
 
-    public void setDueDate(LocalDateTime dueDate) {
-        this.dueDate = Optional.ofNullable(dueDate);
+    public void setDueDate(Optional<LocalDateTime> dueDate) {
+        this.dueDate = dueDate;
     }
 
     public TaskPriority getPriority() {
@@ -70,13 +73,16 @@ public class Task {
         return category;
     }
 
-    public void setCategory(String category) {
-        if (category == null || category.isBlank()) {
-            this.category = Optional.empty();
-            return;
-        }
+    public void setCategory(Optional<String> category) {
+        category.ifPresent(categoryString -> {
+            if (categoryString.isBlank()) {
+                this.category = Optional.empty();
+            }
+        });
 
-        this.category = Optional.ofNullable(category);
+        if (category.isPresent()) {
+            this.category = category;
+        }
     }
 
     

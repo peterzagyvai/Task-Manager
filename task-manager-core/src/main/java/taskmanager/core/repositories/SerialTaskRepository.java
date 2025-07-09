@@ -127,7 +127,7 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
     }
 
     @Override
-    public List<SerializableTask> get(Predicate<SerializableTask> predicate) throws ObjectRepositoryException {
+    public List<SerializableTask> get(Predicate<SerializableTask> predicate) throws ReadingFromRepositoryFailedException {
         List<SerializableTask> tasks = new ArrayList<>();
 
         synchronized (syncObject) {
@@ -149,7 +149,7 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
     }
     
     @Override
-    public List<SerializableTask> getAll() throws ObjectRepositoryException {
+    public List<SerializableTask> getAll() throws ReadingFromRepositoryFailedException {
         List<SerializableTask> allTasks = new ArrayList<>();
 
         synchronized (syncObject) {
@@ -171,7 +171,7 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
     }
 
     @Override
-    public Optional<SerializableTask> get(int id) throws ObjectRepositoryException {
+    public Optional<SerializableTask> get(int id) throws ReadingFromRepositoryFailedException, ObjectRepositoryException {
         if (idSet == null) {
             loadIdCache();
         }

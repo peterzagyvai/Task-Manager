@@ -1,6 +1,9 @@
 package taskmanager.core.mappers;
 
 
+import java.lang.foreign.Linker.Option;
+import java.util.Optional;
+
 import taskmanager.core.models.SerializableTask;
 import taskmanager.core.models.Task;
 
@@ -12,11 +15,11 @@ public class TaskMapper {
         Task task = new Task(serializableTask.getId());
         
         task.setTitle(serializableTask.getTitle());
-        task.setDescription(serializableTask.getDescription());
-        task.setDueDate(serializableTask.getDueDate());
+        task.setDescription(Optional.ofNullable(serializableTask.getDescription()));
+        task.setDueDate(Optional.ofNullable(serializableTask.getDueDate()));
         task.setPriority(serializableTask.getPriority());
         task.setStatus(serializableTask.getStatus());
-        task.setCategory(serializableTask.getCategory());
+        task.setCategory(Optional.ofNullable(serializableTask.getCategory()));
         
         return task;
     }
