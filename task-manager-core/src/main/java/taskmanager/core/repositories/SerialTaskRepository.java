@@ -27,15 +27,17 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
     private static final String DEFAULT_FILE_NAME = "task-manager-core/main/resources/tasks.dat";
     private static final String IDS_FILE_NAME = "task-manager-core/main/resources/tasks_ids.dat";
     private final String saveFile;
+    private final String idCache;
 
     private static Set<Integer> idSet = null;
 
-    public SerialTaskRepository(String fileName) {
+    public SerialTaskRepository(String fileName, String idCacheName) {
         this.saveFile = fileName;
+        this.idCache = idCacheName;
     }
 
     public SerialTaskRepository() {
-        this(DEFAULT_FILE_NAME);
+        this(DEFAULT_FILE_NAME, IDS_FILE_NAME);
     }
 
     @Override
@@ -109,17 +111,18 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
         saveIds();
     }
     
-    private static synchronized void loadIds() throws ObjectRepositoryException {
+    public synchronized void loadIds() throws ObjectRepositoryException {
         if (idSet != null) {
             return;
         } 
 
-        File file = new File(IDS_FILE_NAME);
+        File file = new File(idCache);
 
         try {
             if (file.createNewFile()) {
                 // File did not exist yet
                 idSet = new HashSet<>();
+                saveIds();
                 return;
             } 
 
@@ -127,16 +130,18 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
             throw new ObjectRepositoryException("Caching task ids failed");
         }
 
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(IDS_FILE_NAME))) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(idCache))) {
             idSet = (Set<Integer>) ois.readObject();
         } catch ( IOException | ClassNotFoundException e) {
             throw new ObjectRepositoryException("Caching task ids failed");
         }
     }
 
-    private static synchronized void saveIds() throws FileNotFoundException, IOException, NoSuchElementException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(IDS_FILE_NAME))) {
+    private synchronized void saveIds() throws ObjectRepositoryException {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(idCache))) {
             oos.writeObject(idSet);
+        } catch (IOException | NoSuchElementException e) {
+            throw new ObjectRepositoryException("Cahcing task ids failed");
         }
     }
 
