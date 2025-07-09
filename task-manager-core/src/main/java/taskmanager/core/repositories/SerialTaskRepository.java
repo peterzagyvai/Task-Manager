@@ -15,7 +15,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import taskmanager.core.exceptions.repository.AddingToRepositoryFailedException;
 import taskmanager.core.exceptions.repository.AlreadyInRepositoryException;
@@ -49,7 +48,7 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
 
         // Check if task is already in repo
         if (idSet == null) {
-            loadIds();
+            loadIdCache();
         }
 
         if (idSet.contains(task.getId())) {
@@ -66,7 +65,7 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
 
             oos.writeObject(task);
             idSet.add(task.getId());
-            saveIds();
+            cacheIds();
         } catch (IOException e) {
             throw new AddingToRepositoryFailedException(
                     String.format("Adding task (id: %d) to repository failed.", task.getId())
@@ -89,8 +88,23 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
 
     @Override
     public List<SerializableTask> get(Predicate<SerializableTask> predicate) throws ObjectRepositoryException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'get'");
+        List<SerializableTask> tasks = new ArrayList<>();
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveFile))) {
+            while (true) {
+                Object object = ois.readObject();
+                if (object instanceof SerializableTask task && predicate.test(task)) {
+                    tasks.add(task);
+                }
+            }
+        } catch (EOFException e) {
+            // Exit while loop
+        } catch (IOException | ClassNotFoundException e) {
+            throw new ReadingFromRepositoryFailedException("Reading tasks failed");
+        }
+
+
+        return tasks;
     }
     
     @Override
@@ -116,7 +130,7 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
     @Override
     public Optional<SerializableTask> get(int id) throws ObjectRepositoryException {
         if (idSet == null) {
-            loadIds();
+            loadIdCache();
         }
 
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveFile))) {
@@ -135,22 +149,18 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
 
     @Override
     public void close() throws Exception {
-        saveIds();
+        cacheIds();
     }
     
-    public void loadIds() throws ObjectRepositoryException {
+    public void loadIdCache() throws ObjectRepositoryException {
         synchronized (syncObject) {
-            if (idSet != null) {
-                return;
-            } 
-    
             File file = new File(idCache);
     
             try {
                 if (file.createNewFile()) {
                     // File did not exist yet
                     idSet = new HashSet<>();
-                    saveIds();
+                    cacheIds();
                     return;
                 } 
     
@@ -166,7 +176,7 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
         }
     }
 
-    private void saveIds() throws ObjectRepositoryException {
+    private void cacheIds() throws ObjectRepositoryException {
         synchronized (syncObject) {
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(idCache))) {
                 oos.writeObject(idSet);
