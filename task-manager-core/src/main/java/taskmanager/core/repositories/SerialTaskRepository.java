@@ -4,23 +4,23 @@ import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import taskmanager.core.exceptions.repository.AddingToRepositoryFailedException;
 import taskmanager.core.exceptions.repository.AlreadyInRepositoryException;
-import taskmanager.core.exceptions.repository.LoadObjectFailedException;
 import taskmanager.core.exceptions.repository.ObjectRepositoryException;
+import taskmanager.core.exceptions.repository.ReadingFromRepositoryFailedException;
 import taskmanager.core.interfaces.TaskRepositoryInterface;
 import taskmanager.core.io.AppendableObjectOutputStream;
 import taskmanager.core.models.SerializableTask;
@@ -65,10 +65,12 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
             new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(saveFile, true))))) {
 
             oos.writeObject(task);
-            
+            idSet.add(task.getId());
+            saveIds();
         } catch (IOException e) {
-            throw new ObjectRepositoryException(
-                    String.format("Adding task (id: %d) to repository failed.", task.getId()));
+            throw new AddingToRepositoryFailedException(
+                    String.format("Adding task (id: %d) to repository failed.", task.getId())
+            );
         }
     }
 
@@ -86,15 +88,29 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
     }
 
     @Override
-    public Stream<SerializableTask> get(Predicate<SerializableTask> predicate) throws ObjectRepositoryException {
+    public List<SerializableTask> get(Predicate<SerializableTask> predicate) throws ObjectRepositoryException {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'get'");
     }
     
     @Override
-    public Stream<SerializableTask> get() throws ObjectRepositoryException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'get'");
+    public List<SerializableTask> getAll() throws ObjectRepositoryException {
+        List<SerializableTask> allTasks = new ArrayList<>();
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(saveFile))) {
+            while (true) {
+                Object object = ois.readObject();
+                if (object instanceof SerializableTask task) {
+                    allTasks.add(task);
+                }
+            }
+        } catch (EOFException e) {
+            // Exit while loop
+        } catch (IOException | ClassNotFoundException e) {
+            throw new ReadingFromRepositoryFailedException("Reading tasks failed");
+        }
+
+        return allTasks;
     }
 
     @Override
@@ -113,7 +129,7 @@ public class SerialTaskRepository implements TaskRepositoryInterface, AutoClosea
         } catch (EOFException e) {
             return Optional.empty();
         } catch (IOException | ClassNotFoundException e) {
-            throw new LoadObjectFailedException(String.format("Loading task (id: %d) failed", id));
+            throw new ReadingFromRepositoryFailedException(String.format("Loading task (id: %d) failed", id));
         }
     }
 

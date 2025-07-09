@@ -2,6 +2,7 @@
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.EOFException;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import taskmanager.core.exceptions.repository.AlreadyInRepositoryException;
 import taskmanager.core.exceptions.repository.ObjectRepositoryException;
 import taskmanager.core.models.SerializableTask;
 import taskmanager.core.models.TaskPriority;
@@ -58,7 +60,7 @@ class SerialTaskRepositoryTests {
     }
 
     @Test
-    void testSaveTask() throws ObjectRepositoryException, IOException, ClassNotFoundException {
+    void testAddTask() throws ObjectRepositoryException, IOException, ClassNotFoundException {
         repository.add(task);
         
         Object object = null;
@@ -83,7 +85,7 @@ class SerialTaskRepositoryTests {
     } 
 
     @Test
-    void testSaveManyTasks() throws ObjectRepositoryException, IOException, ClassNotFoundException {
+    void testAddManyTasks() throws ObjectRepositoryException, IOException, ClassNotFoundException {
         SerializableTask task2 = new SerializableTask();
         task.setId(1);
         task.setTitle("Test Task");
@@ -140,6 +142,20 @@ class SerialTaskRepositoryTests {
             () -> assertEquals(TaskPriority.CRITICAL, tasks.get(1).getPriority()),
             () -> assertEquals(TaskStatus.COMPLETED, tasks.get(1).getStatus())
         );
+    }
+
+    @Test
+    void testAddTaskFailExistingId() throws AlreadyInRepositoryException, ObjectRepositoryException {
+        repository.add(task);
+
+        assertThrows(AlreadyInRepositoryException.class, () -> {
+            repository.add(task);
+        });
+    }
+
+    @Test
+    void getAllTasks() {
+
     }
 
     @Test
