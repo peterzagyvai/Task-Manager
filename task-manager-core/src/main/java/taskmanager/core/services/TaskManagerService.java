@@ -53,9 +53,15 @@ public class TaskManagerService {
     }
 
     // TODO: Implement this:
-    public List<Task> get(int pageNumber, int pageSize, Optional<Predicate<Task>> filter, Optional<String> orederBy) {
+    public List<Task> get(int pageNumber, int pageSize, Optional<Predicate<Task>> filter, Optional<String> orederBy) throws ObjectRepositoryException {
         List<Task> tasks = new ArrayList<>();
-        
+
+        if (filter.isPresent()) {
+            Predicate<SerializableTask> serializableFilter = st -> filter.get().test(TaskMapper.serializableToTask(st));
+            repository.get(serializableFilter).stream()
+                .map(st -> TaskMapper.serializableToTask(st))
+                .sorted()
+        }
 
 
         return tasks;
