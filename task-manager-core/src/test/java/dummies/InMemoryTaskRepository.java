@@ -1,7 +1,8 @@
 package dummies;
 
-import java.lang.foreign.Linker.Option;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -32,7 +33,7 @@ public class InMemoryTaskRepository implements TaskRepositoryInterface {
             task.setCategory("Task Category " + (i + 1));
             task.setPriority(TaskPriority.MODERATE);
             task.setStatus(TaskStatus.NOT_STARTED);
-            task.setDueDate(LocalDateTime.of(2025,01,01,00,00,00));
+            task.setDueDate(LocalDateTime.of(LocalDate.of(2025,01,01).plusDays(i), LocalTime.of(00, 00, 00)));
 
             tasks.add(task);
         }

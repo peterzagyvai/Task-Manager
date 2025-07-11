@@ -78,10 +78,16 @@ public class TaskManagerService {
         pageNumber = (pageNumber >= 1 ? pageNumber : 1);
 
         // set max
-        int maxPageNumber = list.size() / pageSize;
+        int maxPageNumber = list.size() / pageSize + 1;
         pageNumber = (pageNumber <= maxPageNumber ? pageNumber : maxPageNumber);
 
-        return list.subList(pageNumber - 1, pageSize);
+        int firstIndex = (pageNumber - 1) * pageSize;
+        int lastIndex = pageNumber * pageSize;
+        if (lastIndex > list.size() - 1) {
+            lastIndex = list.size();
+        }
+        
+        return list.subList(firstIndex, lastIndex);
     }
 
     private static Stream<Task> sortTasks(Stream<Task> originalTasks, Optional<List<TaskOrder>> orderBy) {
