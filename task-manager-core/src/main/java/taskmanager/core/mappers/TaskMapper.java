@@ -29,11 +29,11 @@ public class TaskMapper {
 
         serializableTask.setId(task.getId());
         serializableTask.setTitle(task.getTitle());
-        serializableTask.setDescription(task.getDescription().orElseGet(() -> null));
-        serializableTask.setDueDate(task.getDueDate().orElseGet(() -> null));
+        serializableTask.setDescription(task.getDescription().orElse((null)));
+        serializableTask.setDueDate(task.getDueDate().orElse(null));
         serializableTask.setPriority(task.getPriority());
         serializableTask.setStatus(task.getStatus());
-        serializableTask.setCategory(task.getCategory().orElseGet(() -> null));
+        serializableTask.setCategory(task.getCategory().orElse(null));
 
         return serializableTask;
     }

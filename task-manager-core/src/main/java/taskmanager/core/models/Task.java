@@ -34,15 +34,15 @@ public class Task {
     }
 
     public void setDescription(Optional<String> description) {
-        description.ifPresent(descString -> {
-            if (descString.isBlank()) {
+        description.ifPresentOrElse(descriptionString -> {
+            if (descriptionString.isBlank()) {
                 this.description = Optional.empty();
+            } else {
+                this.description = description;
             }
+        }, () -> {
+            this.description = Optional.empty();
         });
-
-        if (description.isPresent()) {
-            this.description = description;
-        }
     }
 
     public Optional<LocalDateTime> getDueDate() {
@@ -74,15 +74,15 @@ public class Task {
     }
 
     public void setCategory(Optional<String> category) {
-        category.ifPresent(categoryString -> {
+        category.ifPresentOrElse(categoryString -> {
             if (categoryString.isBlank()) {
                 this.category = Optional.empty();
+            } else {
+                this.category = category;
             }
+        }, () -> {
+            this.category = Optional.empty();
         });
-
-        if (category.isPresent()) {
-            this.category = category;
-        }
     }
 
     
